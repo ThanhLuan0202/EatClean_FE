@@ -18,6 +18,8 @@ import MealPlans from './pages/MealPlans';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import CheckoutCancel from './pages/CheckoutCancel';
 import OrderHistory from './pages/OrderHistory';
 import OrderDetail from './pages/OrderDetail';
 import Profile from './pages/Profile';
@@ -61,6 +63,14 @@ function App() {
               <Route
                 path="/checkout"
                 element={<ProtectedRoute><Checkout /></ProtectedRoute>}
+              />
+              <Route
+                path="/checkout/success"
+                element={<CheckoutSuccess />}
+              />
+              <Route
+                path="/checkout/cancel"
+                element={<CheckoutCancel />}
               />
               <Route
                 path="/orders"

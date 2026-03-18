@@ -1,0 +1,133 @@
+import CryptoJS from 'crypto-js';
+import axios from 'axios';
+
+const PAYOS_CLIENT_ID = import.meta.env.VITE_PAYOS_CLIENT_ID;
+const PAYOS_API_KEY = import.meta.env.VITE_PAYOS_API_KEY;
+const PAYOS_CHECK_SUM_KEY = import.meta.env.VITE_PAYOS_CHECK_SUM_KEY;
+
+// Tạo chữ ký HMAC SHA256
+export const generateSignature = (data) => {
+  const dataString = typeof data === 'string' ? data : JSON.stringify(data);
+  return CryptoJS.HmacSHA256(dataString, PAYOS_CHECK_SUM_KEY).toString();
+};
+
+// Tạo payment link từ PayOS
+export const createPaymentLink = async (orderData) => {
+  try {
+    // Nếu không có API key, dùng mock mode
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY) {
+      console.warn('PayOS credentials not found, using mock mode');
+      return {
+        success: true,
+        data: {
+          checkoutUrl: `/checkout/success?orderCode=${orderData.orderCode}&mock=true`,
+          qrCode: `https://api.payos.vn/v1/qr-code/${orderData.orderCode}`,
+          orderCode: orderData.orderCode,
+        },
+      };
+    }
+
+    const payload = {
+      orderCode: orderData.orderCode,
+      amount: Math.round(orderData.amount),
+      description: orderData.description || `Thanh toán đơn hàng ${orderData.orderCode}`,
+      buyerName: orderData.buyerName,
+      buyerEmail: orderData.buyerEmail,
+      buyerPhone: orderData.buyerPhone,
+      buyerAddress: orderData.buyerAddress,
+      returnUrl: `${window.location.origin}/checkout/success`,
+      cancelUrl: `${window.location.origin}/checkout/cancel`,
+      expiredAt: Math.floor(Date.now() / 1000) + 600, // 10 phút
+    };
+
+    // Tạo signature
+    const dataString = JSON.stringify(payload);
+    const signature = generateSignature(dataString);
+
+    // Gửi request tới PayOS API
+    const response = await axios.post(
+      'https://api.payos.vn/v1/payment-requests',
+      {
+        ...payload,
+        signature,
+      },
+      {
+        headers: {
+          'x-client-id': PAYOS_CLIENT_ID,
+          'x-api-key': PAYOS_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('PayOS Error:', error.response?.data || error.message);
+    throw new Error(
+      error.response?.data?.message || 'Tạo link thanh toán thất bại'
+    );
+  }
+};
+
+// Xác thực webhook từ PayOS
+export const verifyWebhook = (body, signature) => {
+  const dataString = JSON.stringify(body);
+  const calculatedSignature = generateSignature(dataString);
+  return calculatedSignature === signature;
+};
+
+// Lấy trạng thái thanh toán
+export const getPaymentStatus = async (orderCode) => {
+  try {
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY) {
+      return { success: true, data: { status: 'PAID' } };
+    }
+
+    const response = await axios.get(
+      `https://api.payos.vn/v1/payment-requests/${orderCode}`,
+      {
+        headers: {
+          'x-client-id': PAYOS_CLIENT_ID,
+          'x-api-key': PAYOS_API_KEY,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Get payment status error:', error);
+    throw error;
+  }
+};
+
+// Hủy payment link
+export const cancelPaymentLink = async (orderCode) => {
+  try {
+    if (!PAYOS_CLIENT_ID || !PAYOS_API_KEY) {
+      return { success: true };
+    }
+
+    const response = await axios.delete(
+      `https://api.payos.vn/v1/payment-requests/${orderCode}`,
+      {
+        headers: {
+          'x-client-id': PAYOS_CLIENT_ID,
+          'x-api-key': PAYOS_API_KEY,
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('Cancel payment error:', error);
+    throw error;
+  }
+};
+
+export default {
+  createPaymentLink,
+  verifyWebhook,
+  getPaymentStatus,
+  cancelPaymentLink,
+  generateSignature,
+};

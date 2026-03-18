@@ -23,6 +23,13 @@ const resources = {
       orderNow: 'Order Now',
       bestSellers: 'Best Sellers',
       whyChooseUs: 'Why Choose EAT CLEAN?',
+      freshIngredients: 'Fresh Ingredients',
+      expertNutrition: 'Expert Nutrition',
+      fastDelivery: 'Fast Delivery',
+      premiumQuality: 'Premium quality meals designed by nutrition experts',
+      startJourney: 'Start Your Health Journey Today',
+      viewMealPlansTitle: 'View Meal Plans',
+      exploreMenuTitle: 'Explore Menu',
       
       // Menu
       allMeals: 'All Meals',
@@ -112,6 +119,22 @@ const resources = {
       loading: 'Loading...',
       price: 'Price',
       
+      // Payment & Checkout
+      paymentSuccess: 'Payment Successful',
+      paymentCancelled: 'Payment Cancelled',
+      paymentCancelledDesc: 'You have cancelled this payment',
+      paymentExpired: 'Payment link has expired',
+      orderPlaced: 'Your order has been placed successfully',
+      confirmationEmail: 'We will send a confirmation email',
+      viewOrders: 'View Orders',
+      continueShopping: 'Continue Shopping',
+      needHelp: 'Need Help?',
+      tryAgain: 'Try Again',
+      bankTransferInfo: 'Bank Transfer Information',
+      scanQRCode: 'Scan QR Code to Pay',
+      processing: 'Processing',
+      orderCode: 'Order Code',
+      
       // Footer
       aboutUs: 'About Us',
       contactUs: 'Contact Us',
@@ -145,6 +168,13 @@ const resources = {
       orderNow: 'Đặt Hàng Ngay',
       bestSellers: 'Bán Chạy Nhất',
       whyChooseUs: 'Tại Sao Chọn EAT CLEAN?',
+      freshIngredients: 'Nguyên Liệu Tươi Sạch',
+      expertNutrition: 'Chuyên Gia Dinh Dưỡng',
+      fastDelivery: 'Giao Hàng Nhanh Chóng',
+      premiumQuality: 'Bữa ăn chất lượng cao cấp được thiết kế bởi chuyên gia dinh dưỡng',
+      startJourney: 'Bắt Đầu Hành Trình Sức Khỏe Của Bạn Hôm Nay',
+      viewMealPlansTitle: 'Xem Gói Ăn',
+      exploreMenuTitle: 'Khám Phá Thực Đơn',
       
       // Menu
       allMeals: 'Tất Cả',
@@ -233,6 +263,22 @@ const resources = {
       back: 'Quay Lại',
       loading: 'Đang Tải...',
       price: 'Giá',
+      
+      // Payment & Checkout
+      paymentSuccess: 'Thanh Toán Thành Công',
+      paymentCancelled: 'Thanh Toán Bị Hủy',
+      paymentCancelledDesc: 'Bạn đã hủy thanh toán này',
+      paymentExpired: 'Link thanh toán đã hết hạn',
+      orderPlaced: 'Đơn hàng của bạn đã được đặt thành công',
+      confirmationEmail: 'Chúng tôi sẽ gửi email xác nhận',
+      viewOrders: 'Xem Đơn Hàng',
+      continueShopping: 'Tiếp Tục Mua Sắm',
+      needHelp: 'Cần Hỗ Trợ?',
+      tryAgain: 'Thử Lại',
+      bankTransferInfo: 'Thông Tin Chuyển Khoản',
+      scanQRCode: 'Quét Mã QR Để Thanh Toán',
+      processing: 'Đang Xử Lý',
+      orderCode: 'Mã Đơn Hàng',
       
       // Footer
       aboutUs: 'Về Chúng Tôi',

@@ -74,15 +74,15 @@ const Home = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { title: 'Fresh Ingredients', icon: '🥬' },
-              { title: 'Expert Nutrition', icon: '⚖️' },
-              { title: 'Fast Delivery', icon: '🚚' }
+              { title: t('freshIngredients'), icon: '🥬' },
+              { title: t('expertNutrition'), icon: '⚖️' },
+              { title: t('fastDelivery'), icon: '🚚' }
             ].map((item, index) => (
               <div key={index} className="card p-6 text-center">
                 <div className="text-5xl mb-4">{item.icon}</div>
                 <h3 className="font-bold text-lg mb-3">{item.title}</h3>
                 <p className="text-gray-600">
-                  Premium quality meals designed by nutrition experts
+                  {t('premiumQuality')}
                 </p>
               </div>
             ))}
@@ -116,20 +116,20 @@ const Home = () => {
       <section className="bg-primary-600 text-white py-16">
         <div className="container-custom text-center">
           <h2 className="text-3xl font-bold mb-6">
-            Start Your Health Journey Today
+            {t('startJourney')}
           </h2>
           <div className="flex flex-wrap gap-4 justify-center">
             <button
               onClick={() => navigate('/meal-plans')}
               className="bg-white text-primary-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition"
             >
-              View Meal Plans
+              {t('viewMealPlansTitle')}
             </button>
             <button
               onClick={() => navigate('/menu')}
               className="bg-primary-700 text-white px-8 py-3 rounded-lg font-bold hover:bg-primary-800 transition border-2 border-white"
             >
-              Explore Menu
+              {t('exploreMenuTitle')}
             </button>
           </div>
         </div>

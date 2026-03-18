@@ -5,7 +5,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { toast } from 'react-toastify';
-import { FaCopy, FaCheckCircle, FaQrcode, FaUniversity } from 'react-icons/fa';
+import { FaCopy, FaCheckCircle, FaQrcode, FaUniversity, FaWallet } from 'react-icons/fa';
+import { createPaymentLink } from '../utils/payosService';
 
 const MOCK_MODE = true;
 
@@ -93,6 +94,69 @@ const Checkout = () => {
         ward: formData.ward,
         note: formData.note
       };
+
+      // Handle PayOS payment
+      if (paymentMethod === 'payos') {
+        const orderCode = `ORD${Date.now()}`;
+        
+        try {
+          const paymentLink = await createPaymentLink({
+            orderCode,
+            amount: cart.totalPrice,
+            buyerName: formData.name,
+            buyerEmail: formData.email,
+            buyerPhone: formData.phone,
+            buyerAddress: formData.address,
+            description: `Thanh toán đơn hàng từ EAT CLEAN - ${cart.items.length} sản phẩm`,
+          });
+
+          // Lưu order pending vào localStorage trước khi redirect
+          const mockOrder = {
+            _id: 'order' + Date.now(),
+            orderCode,
+            orderNumber: orderCode,
+            user: {
+              _id: user._id,
+              name: user.name,
+              email: user.email
+            },
+            items: cart.items.map(item => ({
+              meal: item.meal,
+              name: item.meal.name,
+              price: item.meal.price,
+              quantity: item.quantity,
+              calories: item.meal.calories
+            })),
+            totalPrice: cart.totalPrice,
+            totalCalories: cart.totalCalories,
+            shippingInfo,
+            paymentMethod: 'payos',
+            paymentStatus: 'pending',
+            orderStatus: 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          const existingOrders = JSON.parse(localStorage.getItem('mockOrders') || '[]');
+          existingOrders.push(mockOrder);
+          localStorage.setItem('mockOrders', JSON.stringify(existingOrders));
+
+          // Redirect to PayOS checkout
+          toast.info('Redirecting to PayOS...');
+          if (paymentLink.data && paymentLink.data.checkoutUrl) {
+            window.location.href = paymentLink.data.checkoutUrl;
+          } else {
+            // Mock mode - simulate success
+            setTimeout(() => {
+              navigate(`/checkout/success?orderCode=${orderCode}&mock=true`);
+            }, 1500);
+          }
+        } catch (error) {
+          toast.error(error.message || 'Failed to create payment link');
+          setLoading(false);
+        }
+        return;
+      }
 
       if (MOCK_MODE) {
         // Mock mode: create order in localStorage
@@ -278,7 +342,8 @@ const Checkout = () => {
                     {[
                       { value: 'cod', label: t('cod'), icon: '💵' },
                       { value: 'bank-transfer', label: t('bankTransfer'), icon: '🏦' },
-                      { value: 'qr-code', label: t('qrCode'), icon: '📱' }
+                      { value: 'qr-code', label: t('qrCode'), icon: '📱' },
+                      { value: 'payos', label: 'PayOS', icon: '💳' }
                     ].map((method) => (
                       <label key={method.value} className="flex items-center cursor-pointer p-4 border-2 rounded-lg hover:bg-gray-50 transition">
                         <input
@@ -438,6 +503,48 @@ const Checkout = () => {
                         <FaCheckCircle className="inline mr-2 text-green-600" />
                         You will pay <strong className="text-lg">{cart.totalPrice.toLocaleString()}đ</strong> in cash when receiving your order
                       </p>
+                    </div>
+                  )}
+
+                  {/* PayOS Payment */}
+                  {paymentMethod === 'payos' && (
+                    <div className="mt-6 p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg">
+                      <div className="flex items-center gap-2 mb-4">
+                        <FaWallet className="text-indigo-600 text-xl" />
+                        <h4 className="font-bold text-lg text-indigo-900">
+                          PayOS - Fast & Secure Payment
+                        </h4>
+                      </div>
+
+                      <div className="bg-white p-4 rounded-lg mb-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Payment Amount:</span>
+                          <span className="font-bold text-2xl text-indigo-600">{cart.totalPrice.toLocaleString()}đ</span>
+                        </div>
+                        <hr />
+                        <div className="space-y-2 text-sm">
+                          <p className="flex items-center text-green-700">
+                            <FaCheckCircle className="mr-2" /> Fast & Secure
+                          </p>
+                          <p className="flex items-center text-green-700">
+                            <FaCheckCircle className="mr-2" /> Multiple payment methods
+                          </p>
+                          <p className="flex items-center text-green-700">
+                            <FaCheckCircle className="mr-2" /> Instant confirmation
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-indigo-100 rounded-lg border border-indigo-300">
+                        <p className="text-sm text-indigo-900">
+                          Click <strong>"Place Order"</strong> to proceed to PayOS payment gateway. You can pay with:
+                        </p>
+                        <ul className="text-sm text-indigo-900 mt-2 space-y-1 ml-4 list-disc">
+                          <li>Bank Transfer QR Code</li>
+                          <li>Banking App/Website</li>
+                          <li>Installment Methods</li>
+                        </ul>
+                      </div>
                     </div>
                   )}
                 </div>

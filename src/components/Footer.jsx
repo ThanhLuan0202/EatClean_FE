@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { FaFacebook, FaInstagram, FaTiktok, FaPhone, FaEnvelope } from 'react-icons/fa';
 
@@ -20,9 +21,9 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4">{t('aboutUs')}</h4>
             <ul className="space-y-2 text-gray-400">
-              <li><a href="#" className="hover:text-white transition">Home</a></li>
-              <li><a href="#" className="hover:text-white transition">Menu</a></li>
-              <li><a href="#" className="hover:text-white transition">About</a></li>
+              <li><Link to="/" className="hover:text-white transition">{t('home')}</Link></li>
+              <li><Link to="/menu" className="hover:text-white transition">{t('menu')}</Link></li>
+              <li><Link to="/about" className="hover:text-white transition">{t('about')}</Link></li>
             </ul>
           </div>
 

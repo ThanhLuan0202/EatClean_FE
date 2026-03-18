@@ -18,7 +18,8 @@ const Header = () => {
   };
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === 'en' ? 'vi' : 'en';
+    const currentLang = i18n.language || window.localStorage.i18nextLng || 'vi';
+    const newLang = currentLang.includes('en') ? 'vi' : 'en';
     i18n.changeLanguage(newLang);
   };
 
