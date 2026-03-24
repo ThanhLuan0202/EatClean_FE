@@ -232,18 +232,18 @@ const Checkout = () => {
     return (
       <div className="bg-gray-50 min-h-screen py-12">
         <div className="container-custom max-w-2xl mx-auto text-center">
-          <div className="card p-8 font-sans">
-            <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold mb-2">
-              {isVi ? 'Tạo Đơn Hàng Thành Công!' : 'Order Created Successfully!'}
+          <div className="card p-8 font-sans border-2 border-indigo-200 bg-white">
+            <FaQrcode className="text-6xl text-indigo-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold mb-2 text-indigo-900">
+              {isVi ? 'Vui Lòng Thanh Toán' : 'Please Complete Payment'}
             </h1>
             <p className="text-gray-600 mb-8">
               {isVi 
-                ? 'Vui lòng quét mã QR dưới đây bằng ứng dụng ngân hàng để hoàn tất thanh toán.' 
-                : 'Please scan the QR code below with your banking app to complete the payment.'}
+                ? 'Đơn hàng của bạn đã được ghi nhận. Vui lòng quét mã QR dưới đây bằng ứng dụng ngân hàng.' 
+                : 'Your order is recorded. Please scan the QR code below with your banking app.'}
             </p>
             
-            <div className="bg-white p-6 rounded-xl border-2 border-primary-100 shadow-sm inline-block">
+            <div className="bg-white p-6 rounded-xl border-4 border-indigo-100 shadow-sm inline-block">
               <img 
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payosQrCode)}`}
                 alt="PayOS QR Code" 
@@ -251,14 +251,14 @@ const Checkout = () => {
               />
             </div>
 
-            <div className="mt-8 space-y-4">
+            <div className="mt-8 space-y-4 max-w-md mx-auto">
                {payosCheckoutUrl && (
-                 <a href={payosCheckoutUrl} target="_blank" rel="noreferrer" className="btn-primary w-full block py-3 text-center">
-                   {isVi ? 'Mở Trang Thanh Toán PayOS' : 'Open PayOS Checkout Page'}
+                 <a href={payosCheckoutUrl} target="_blank" rel="noreferrer" className="btn-primary flex items-center justify-center w-full py-3">
+                   {isVi ? 'Hoặc mở cổng thanh toán PayOS để chuyển khoản' : 'Or open PayOS interface'}
                  </a>
                )}
-               <button onClick={() => navigate('/orders')} className="btn-outline w-full py-3">
-                 {isVi ? 'Xem Lịch Sử Đơn Hàng' : 'View Order History'}
+               <button onClick={() => navigate('/orders')} className="btn-outline w-full py-3 text-sm">
+                 {isVi ? 'Xác nhận Đã chuyển khoản (Chuyển tới Lịch sử)' : 'Confirm Paid (Go to Orders)'}
                </button>
             </div>
           </div>
