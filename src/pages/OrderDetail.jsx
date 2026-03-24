@@ -217,8 +217,12 @@ const OrderDetail = () => {
             {/* QR Code */}
             {order.qrCode && (
               <div className="mt-6 pt-6 border-t text-center">
-                <p className="text-sm text-gray-600 mb-3">Payment QR Code</p>
-                <img src={order.qrCode} alt="QR Code" className="w-48 h-48 mx-auto" />
+                <p className="text-sm text-gray-600 mb-3">{isVi ? 'Mã QR Thanh Toán' : 'Payment QR Code'}</p>
+                <img 
+                  src={order.qrCode.startsWith('http') ? order.qrCode : `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(order.qrCode)}`} 
+                  alt="QR Code" 
+                  className="w-48 h-48 mx-auto" 
+                />
               </div>
             )}
           </div>

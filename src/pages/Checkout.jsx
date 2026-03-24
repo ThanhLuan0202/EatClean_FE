@@ -29,6 +29,8 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [qrCode, setQrCode] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [payosQrCode, setPayosQrCode] = useState(null);
+  const [payosCheckoutUrl, setPayosCheckoutUrl] = useState(null);
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -98,24 +100,23 @@ const Checkout = () => {
 
       // Handle PayOS payment
       if (paymentMethod === 'payos') {
-        const orderCode = `ORD${Date.now()}`;
+        const orderCodeInt = Math.floor(Date.now() / 1000) + Math.floor(Math.random() * 100000);
         
         try {
           const paymentLink = await createPaymentLink({
-            orderCode,
+            orderCode: orderCodeInt,
             amount: cart.totalPrice,
             buyerName: formData.name,
             buyerEmail: formData.email,
             buyerPhone: formData.phone,
             buyerAddress: formData.address,
-            description: `Thanh toán đơn hàng từ EAT CLEAN - ${cart.items.length} sản phẩm`,
+            description: `EATCLEAN ${orderCodeInt}`
           });
 
-          // Lưu order pending vào localStorage trước khi redirect
           const mockOrder = {
             _id: 'order' + Date.now(),
-            orderCode,
-            orderNumber: orderCode,
+            orderCode: orderCodeInt,
+            orderNumber: orderCodeInt,
             user: {
               _id: user._id,
               name: user.name,
@@ -134,6 +135,7 @@ const Checkout = () => {
             paymentMethod: 'payos',
             paymentStatus: 'pending',
             orderStatus: 'pending',
+            qrCode: paymentLink.data ? paymentLink.data.qrCode : null,
             createdAt: new Date(),
             updatedAt: new Date()
           };
@@ -142,15 +144,20 @@ const Checkout = () => {
           existingOrders.push(mockOrder);
           localStorage.setItem('mockOrders', JSON.stringify(existingOrders));
 
-          // Redirect to PayOS checkout
-          toast.info('Redirecting to PayOS...');
-          if (paymentLink.data && paymentLink.data.checkoutUrl) {
+          toast.success('Order created successfully!');
+          if (paymentLink.data && paymentLink.data.qrCode) {
+            setPayosQrCode(paymentLink.data.qrCode);
+            setPayosCheckoutUrl(paymentLink.data.checkoutUrl);
+            setLoading(false);
+            clearCart();
+            return; // stop execution, UI will swap to QR display
+          } else if (paymentLink.data && paymentLink.data.checkoutUrl) {
+            toast.info('Redirecting to PayOS...');
             window.location.href = paymentLink.data.checkoutUrl;
+            return;
           } else {
-            // Mock mode - simulate success
-            setTimeout(() => {
-              navigate(`/checkout/success?orderCode=${orderCode}&mock=true`);
-            }, 1500);
+            console.error('No QR Code returned from PayOS:', paymentLink);
+            throw new Error('PayOS response invalid (missing QR/CheckoutUrl)');
           }
         } catch (error) {
           toast.error(error.message || 'Failed to create payment link');
@@ -220,6 +227,45 @@ const Checkout = () => {
       setLoading(false);
     }
   };
+
+  if (payosQrCode) {
+    return (
+      <div className="bg-gray-50 min-h-screen py-12">
+        <div className="container-custom max-w-2xl mx-auto text-center">
+          <div className="card p-8 font-sans">
+            <FaCheckCircle className="text-6xl text-green-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold mb-2">
+              {isVi ? 'Tạo Đơn Hàng Thành Công!' : 'Order Created Successfully!'}
+            </h1>
+            <p className="text-gray-600 mb-8">
+              {isVi 
+                ? 'Vui lòng quét mã QR dưới đây bằng ứng dụng ngân hàng để hoàn tất thanh toán.' 
+                : 'Please scan the QR code below with your banking app to complete the payment.'}
+            </p>
+            
+            <div className="bg-white p-6 rounded-xl border-2 border-primary-100 shadow-sm inline-block">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payosQrCode)}`}
+                alt="PayOS QR Code" 
+                className="w-64 h-64 mx-auto"
+              />
+            </div>
+
+            <div className="mt-8 space-y-4">
+               {payosCheckoutUrl && (
+                 <a href={payosCheckoutUrl} target="_blank" rel="noreferrer" className="btn-primary w-full block py-3 text-center">
+                   {isVi ? 'Mở Trang Thanh Toán PayOS' : 'Open PayOS Checkout Page'}
+                 </a>
+               )}
+               <button onClick={() => navigate('/orders')} className="btn-outline w-full py-3">
+                 {isVi ? 'Xem Lịch Sử Đơn Hàng' : 'View Order History'}
+               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!cart || !cart.items || cart.items.length === 0) {
     return (
@@ -342,9 +388,7 @@ const Checkout = () => {
                   <div className="space-y-3">
                     {[
                       { value: 'cod', label: t('cod'), icon: '💵' },
-                      { value: 'bank-transfer', label: t('bankTransfer'), icon: '🏦' },
-                      { value: 'qr-code', label: t('qrCode'), icon: '📱' },
-                      { value: 'payos', label: 'PayOS', icon: '💳' }
+                      { value: 'payos', label: t('qrCode'), icon: '📱' }
                     ].map((method) => (
                       <label key={method.value} className="flex items-center cursor-pointer p-4 border-2 rounded-lg hover:bg-gray-50 transition">
                         <input
@@ -361,141 +405,9 @@ const Checkout = () => {
                     ))}
                   </div>
 
-                  {/* Bank Transfer Information */}
-                  {paymentMethod === 'bank-transfer' && (
-                    <div className="mt-6 p-6 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-4">
-                        <FaUniversity className="text-blue-600 text-xl" />
-                        <h4 className="font-bold text-lg text-blue-900">
-                          {t('bankTransferInfo') || 'Bank Transfer Information'}
-                        </h4>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="bg-white p-3 rounded border">
-                          <p className="text-xs text-gray-600 mb-1">Bank Name</p>
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-gray-900">{BANK_INFO.bankName}</p>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(BANK_INFO.bankName)}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <FaCopy />
-                            </button>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">{BANK_INFO.bankBranch}</p>
-                        </div>
+                  {/* Bank Transfer block removed */}
 
-                        <div className="bg-white p-3 rounded border">
-                          <p className="text-xs text-gray-600 mb-1">Account Number</p>
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-xl text-gray-900">{BANK_INFO.accountNumber}</p>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(BANK_INFO.accountNumber)}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <FaCopy />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-white p-3 rounded border">
-                          <p className="text-xs text-gray-600 mb-1">Account Name</p>
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-gray-900">{BANK_INFO.accountName}</p>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(BANK_INFO.accountName)}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <FaCopy />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-white p-3 rounded border">
-                          <p className="text-xs text-gray-600 mb-1">Transfer Amount</p>
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-2xl text-green-600">{cart.totalPrice.toLocaleString()}đ</p>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(cart.totalPrice.toString())}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <FaCopy />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-yellow-50 p-3 rounded border border-yellow-300">
-                          <p className="text-xs text-gray-600 mb-1">Transfer Content / Message</p>
-                          <div className="flex items-center justify-between">
-                            <p className="font-bold text-gray-900">DH {generateOrderNumber()}</p>
-                            <button
-                              type="button"
-                              onClick={() => copyToClipboard(`DH ${generateOrderNumber()}`)}
-                              className="text-blue-600 hover:text-blue-700"
-                            >
-                              <FaCopy />
-                            </button>
-                          </div>
-                          <p className="text-xs text-orange-600 mt-2">⚠️ Please include this content in your transfer</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 p-3 bg-blue-100 rounded">
-                        <p className="text-sm text-blue-900">
-                          <FaCheckCircle className="inline mr-2 text-blue-600" />
-                          Your order will be confirmed after we receive the payment
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* QR Code Payment */}
-                  {paymentMethod === 'qr-code' && (
-                    <div className="mt-6 p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
-                      <div className="flex items-center gap-2 mb-4">
-                        <FaQrcode className="text-purple-600 text-xl" />
-                        <h4 className="font-bold text-lg text-purple-900">
-                          {t('scanQRCode') || 'Scan QR Code to Pay'}
-                        </h4>
-                      </div>
-
-                      <div className="bg-white p-6 rounded-lg text-center">
-                        <img
-                          src={generateQRCode(cart.totalPrice, generateOrderNumber())}
-                          alt="QR Code"
-                          className="mx-auto w-64 h-64 border-4 border-purple-200 rounded-lg shadow-lg"
-                        />
-                        
-                        <div className="mt-4 space-y-2">
-                          <p className="text-sm text-gray-600">Amount to pay</p>
-                          <p className="text-3xl font-bold text-purple-600">{cart.totalPrice.toLocaleString()}đ</p>
-                        </div>
-
-                        <div className="mt-4 p-4 bg-purple-50 rounded-lg">
-                          <p className="text-sm font-semibold text-purple-900 mb-2">How to pay:</p>
-                          <ol className="text-xs text-left text-gray-700 space-y-1">
-                            <li>1️⃣ Open your banking app</li>
-                            <li>2️⃣ Select "Scan QR" or "Transfer"</li>
-                            <li>3️⃣ Scan the QR code above</li>
-                            <li>4️⃣ Confirm the amount: <strong>{cart.totalPrice.toLocaleString()}đ</strong></li>
-                            <li>5️⃣ Complete the payment</li>
-                          </ol>
-                        </div>
-
-                        <div className="mt-4 p-3 bg-green-50 border border-green-300 rounded">
-                          <p className="text-sm text-green-800">
-                            <FaCheckCircle className="inline mr-2 text-green-600" />
-                            Payment will be automatically verified
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  {/* Old QR code removed, replaced by PayOS */}
 
                   {/* COD Information */}
                   {paymentMethod === 'cod' && (
@@ -509,18 +421,18 @@ const Checkout = () => {
 
                   {/* PayOS Payment */}
                   {paymentMethod === 'payos' && (
-                    <div className="mt-6 p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg">
+                    <div className="mt-6 p-6 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
                       <div className="flex items-center gap-2 mb-4">
-                        <FaWallet className="text-indigo-600 text-xl" />
-                        <h4 className="font-bold text-lg text-indigo-900">
-                          PayOS - Fast & Secure Payment
+                        <FaQrcode className="text-purple-600 text-xl" />
+                        <h4 className="font-bold text-lg text-purple-900">
+                          {t('scanQRCode') || 'QR Code Payment'}
                         </h4>
                       </div>
 
                       <div className="bg-white p-4 rounded-lg mb-4 space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-600">Payment Amount:</span>
-                          <span className="font-bold text-2xl text-indigo-600">{cart.totalPrice.toLocaleString()}đ</span>
+                          <span className="font-bold text-2xl text-purple-600">{cart.totalPrice.toLocaleString()}đ</span>
                         </div>
                         <hr />
                         <div className="space-y-2 text-sm">
@@ -536,14 +448,15 @@ const Checkout = () => {
                         </div>
                       </div>
 
-                      <div className="p-4 bg-indigo-100 rounded-lg border border-indigo-300">
-                        <p className="text-sm text-indigo-900">
-                          Click <strong>"Place Order"</strong> to proceed to PayOS payment gateway. You can pay with:
+                      <div className="p-4 bg-purple-100 rounded-lg border border-purple-300">
+                        <p className="text-sm text-purple-900">
+                          {isVi 
+                            ? 'Bấm "Đặt Hàng" để tạo mã QR thanh toán an toàn.'
+                            : 'Click "Place Order" to generate your secure payment QR code.'}
                         </p>
-                        <ul className="text-sm text-indigo-900 mt-2 space-y-1 ml-4 list-disc">
-                          <li>Bank Transfer QR Code</li>
-                          <li>Banking App/Website</li>
-                          <li>Installment Methods</li>
+                        <ul className="text-sm text-purple-900 mt-2 space-y-1 ml-4 list-disc">
+                          <li>{isVi ? 'Hỗ trợ quét ứng dụng ngân hàng' : 'Supports all banking apps'}</li>
+                          <li>{isVi ? 'Nhận thanh toán 24/7' : '24/7 instant confirmation'}</li>
                         </ul>
                       </div>
                     </div>

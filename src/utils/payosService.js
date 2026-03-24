@@ -28,9 +28,9 @@ export const createPaymentLink = async (orderData) => {
     }
 
     const payload = {
-      orderCode: orderData.orderCode,
+      orderCode: Number(String(orderData.orderCode).replace(/\D/g, '') || Date.now()), // Ensure orderCode is a number for PayOS
       amount: Math.round(orderData.amount),
-      description: orderData.description || `Thanh toán đơn hàng ${orderData.orderCode}`,
+      description: `EATCLEAN ${String(orderData.orderCode).substring(10)}`.substring(0, 25), // max 25 chars
       buyerName: orderData.buyerName,
       buyerEmail: orderData.buyerEmail,
       buyerPhone: orderData.buyerPhone,
@@ -40,13 +40,22 @@ export const createPaymentLink = async (orderData) => {
       expiredAt: Math.floor(Date.now() / 1000) + 600, // 10 phút
     };
 
-    // Tạo signature
-    const dataString = JSON.stringify(payload);
+    // PayOS requires signature of amount, cancelUrl, description, orderCode, returnUrl
+    const signatureData = {
+      amount: payload.amount,
+      cancelUrl: payload.cancelUrl,
+      description: payload.description,
+      orderCode: payload.orderCode,
+      returnUrl: payload.returnUrl
+    };
+
+    const sortedKeys = Object.keys(signatureData).sort();
+    const dataString = sortedKeys.map(key => `${key}=${signatureData[key]}`).join('&');
     const signature = generateSignature(dataString);
 
     // Gửi request tới PayOS API
     const response = await axios.post(
-      'https://api.payos.vn/v1/payment-requests',
+      '/payos-api/v2/payment-requests',
       {
         ...payload,
         signature,
@@ -59,6 +68,11 @@ export const createPaymentLink = async (orderData) => {
         },
       }
     );
+
+    if (response.data.code !== '00') {
+      console.error('PayOS API returned error:', response.data);
+      throw new Error(response.data.desc || 'PayOS Error');
+    }
 
     return response.data;
   } catch (error) {
@@ -84,7 +98,7 @@ export const getPaymentStatus = async (orderCode) => {
     }
 
     const response = await axios.get(
-      `https://api.payos.vn/v1/payment-requests/${orderCode}`,
+      `/payos-api/v2/payment-requests/${orderCode}`,
       {
         headers: {
           'x-client-id': PAYOS_CLIENT_ID,
@@ -108,7 +122,7 @@ export const cancelPaymentLink = async (orderCode) => {
     }
 
     const response = await axios.delete(
-      `https://api.payos.vn/v1/payment-requests/${orderCode}`,
+      `/payos-api/v2/payment-requests/${orderCode}`,
       {
         headers: {
           'x-client-id': PAYOS_CLIENT_ID,
